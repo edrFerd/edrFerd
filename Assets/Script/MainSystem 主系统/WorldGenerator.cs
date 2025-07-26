@@ -131,7 +131,7 @@ public class WorldGenerator : MonoBehaviour
     /// </summary>
     /// <param name="position">方块位置</param>
     /// <param name="texture">方块纹理</param>
-    private void CreateBlock(Vector3 position, Texture2D texture)
+    public void CreateBlock(Vector3 position, Texture2D texture)
     {
         blockCounter++;
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -393,5 +393,18 @@ public class WorldGenerator : MonoBehaviour
         }
         blockDictionary.Clear();
         blockDictionary_GameObject.Clear();
+    }
+
+    /// <summary>
+    /// 获取方块中心点
+    /// </summary>
+    public Vector3 GetBlockCenter(Vector3 hitPoint, Vector3 hitNormal)
+    {
+        Vector3 placePosition = hitPoint + hitNormal * 0.5f;
+        return new Vector3(
+            Mathf.Round(placePosition.x),
+            Mathf.Round(placePosition.y),
+            Mathf.Round(placePosition.z)
+        );
     }
 }

@@ -11,10 +11,20 @@ using UnityEngine;
 /// </summary>
 public class NetworkManager : MonoBehaviour
 {
-    private const string ServerUrl = "http://10.233.1.4:1416";
+    public float tick_update_interval = 1f/60f;
+
+    private const string ServerUrl = "http://localhost:1416";
     private SYSManager sysManager;
     private WorldGenerator worldGenerator;
     private static readonly HttpClient httpClient = new HttpClient();
+
+    // 初始化 HttpClient 配置
+    static NetworkManager()
+    {
+        httpClient.Timeout = TimeSpan.FromSeconds(10); // 设置10秒超时
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Unity-Client/1.0");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+    }
 
     // 公钥响应结构
     [Serializable]
@@ -30,6 +40,7 @@ public class NetworkManager : MonoBehaviour
         public List<BlockState> known_world_state;
     }
 
+    // 适配实际 JSON 结构
     [Serializable]
     public class BlockState
     {
@@ -117,16 +128,32 @@ public class NetworkManager : MonoBehaviour
     private IEnumerator RequestKnownWorldState()
     {
         string url = ServerUrl + "/known_world_state";
-        var task = Task.Run(async () =>
+        Debug.Log($"[NetworkManager] 开始请求世界状态: {url}");
+        
+        int retryCount = 0;
+        const int maxRetries = 3;
+        
+        while (retryCount < maxRetries)
         {
-            try
-            {
+            retryCount++;
+            Debug.Log($"[NetworkManager] 尝试第 {retryCount} 次请求世界状态");
+            
+         var task = Task.Run(async () =>
+         {
+             try
+             {
+                Debug.Log($"[NetworkManager] 发送HTTP请求到: {url}");
                 var response = await httpClient.GetStringAsync(url);
+                Debug.Log($"[NetworkManager] 收到响应，长度: {response?.Length ?? 0}");
                 return response;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[NetworkManager] 获取世界状态失败: {ex.ToString()}");
+                Debug.LogError($"[NetworkManager] 第 {retryCount} 次请求世界状态失败: {ex.GetType().Name}: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Debug.LogError($"[NetworkManager] 内部异常: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                }
                 return null;
             }
         });
@@ -145,12 +172,31 @@ public class NetworkManager : MonoBehaviour
             {
                 KnownWorldStateResponse resp = new KnownWorldStateResponse { known_world_state = JsonUtility.FromJson<BlockStateArrayWrapper>("{\"array\": " + json + "}").array };
                 ApplyWorldState(resp);
+                Debug.Log($"[NetworkManager] 成功应用世界状态，方块数量: {resp.known_world_state?.Count ?? 0}");
+                yield break; // 成功，退出重试循环
             }
             else
             {
                 KnownWorldStateResponse resp = JsonUtility.FromJson<KnownWorldStateResponse>(json);
                 ApplyWorldState(resp);
+                Debug.Log($"[NetworkManager] 成功应用世界状态，方块数量: {resp.known_world_state?.Count ?? 0}");
+                yield break; // 成功，退出重试循环
             }
+        }
+        else
+        {
+            Debug.LogWarning($"[NetworkManager] 第 {retryCount} 次请求返回空结果");
+            if (retryCount < maxRetries)
+            {
+                Debug.Log($"[NetworkManager] 等待 2 秒后重试...");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+        }
+        
+        if (retryCount >= maxRetries)
+        {
+            Debug.LogError($"[NetworkManager] 世界状态请求失败，已重试 {maxRetries} 次");
         }
     }
 
@@ -194,7 +240,7 @@ public class NetworkManager : MonoBehaviour
         while (true)
         {
             // 每秒请求一次
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(tick_update_interval);
 
             var task = Task.Run(async () =>
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -224,7 +224,6 @@ public class CameraLtHand : MonoBehaviour
 	/// </summary>
 	private void CreateWireframeVisualizer()
 	{
-    {
         // 创建线框材质
         wireframeMaterial = new Material(Shader.Find("Standard"));
         wireframeMaterial.SetFloat("_Mode", 3); // 透明模式

@@ -118,5 +118,15 @@ public class UserIntentManager : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// 删除方块
+    /// </summary>
+    public void DeleteBlock(Vector3 position)
+    {
+        if (sysManager != null && sysManager.worldGenerator != null)
+        {
+            sysManager.worldGenerator.Main(position, null);
+        }
+    }
 
 } 
