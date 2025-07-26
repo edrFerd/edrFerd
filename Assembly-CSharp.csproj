@@ -61,6 +61,7 @@
     <Compile Include="Assets\Scripts\LoggerInitializer.cs" />
     <Compile Include="Assets\Scripts\CustomLogger.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Script\MainSystem 主系统\MaterialManager.cs" />
     <Compile Include="Assets\Script\MainSystem 主系统\Tools.cs" />
     <Compile Include="Assets\Script\MainSystem 主系统\WorldMachine.cs" />
     <Compile Include="Assets\Script\MainSystem 主系统\ResourceManager.cs" />

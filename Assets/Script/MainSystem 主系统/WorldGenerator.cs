@@ -285,56 +285,7 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// BASE64字符串转换为Texture2D，对于相同的输入字符串总是返回相同的实例。
-    /// 输入字符串应为有效的PNG或JPG BASE64编码。缓存确保相同输入返回相同实例。
-    /// </summary>
-    private static Dictionary<string, Texture2D> base64TextureCache = new Dictionary<string, Texture2D>();
-    /// <summary>
-    /// 将Base64字符串解码为Texture2D，带有缓存机制，避免重复解码
-    /// </summary>
-    /// <param name="base64">Base64编码的图片字符串</param>
-    /// <returns>解码得到的Texture2D</returns>
-    public static Texture2D TextureFromBase64(string base64)
-    {
-        if (string.IsNullOrEmpty(base64)) return null;
-        if (base64TextureCache.TryGetValue(base64, out Texture2D cached))
-        {
-            return cached;
-        }
-        
-        try
-        {
-            byte[] imageData = System.Convert.FromBase64String(base64);
-            Texture2D tex = new Texture2D(16, 16, TextureFormat.RGBA32, false);
-            bool loadSuccess = tex.LoadImage(imageData);
-            
-            if (!loadSuccess)
-            {
-                Debug.LogWarning($"无法加载Base64图像数据，使用默认纹理。数据长度: {imageData.Length}");
-                // 创建默认纹理
-                tex = CreateDefaultTexture();
-            }
-            else
-            {
-                tex.filterMode = FilterMode.Point;
-                tex.wrapMode = TextureWrapMode.Repeat;
-                tex.Apply();
-            }
-            
-            base64TextureCache[base64] = tex;
-            return tex;
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"Base64图像数据解析失败，使用默认纹理。错误: {e.Message}");
-            // 创建默认纹理
-            Texture2D fallbackTex = CreateDefaultTexture();
-            base64TextureCache[base64] = fallbackTex;
-            return fallbackTex;
-        }
-    }
-    
+
     /// <summary>
     /// 创建默认纹理作为加载失败时的备用方案
     /// </summary>
@@ -353,33 +304,6 @@ public class WorldGenerator : MonoBehaviour
         tex.wrapMode = TextureWrapMode.Repeat;
         tex.Apply();
         return tex;
-    }
-
-    /// <summary>
-    /// 从JSON响应更新世界（适用于完整和增量更新）
-    /// </summary>
-    /// <param name="response">解析的BlockListResponse</param>
-    /// <param name="isFullState">这是否是一个完整的世界状态？</param>
-    public void UpdateFromBlockList(BlockListResponse response, bool isFullState)
-    {
-        if (response == null || response.Blocks == null) return;
-        if (isFullState)
-        {
-            // 完全同步：清除所有方块
-            foreach (var pos in new List<Vector3>(blockDictionary_GameObject.Keys))
-            {
-                DeleteBlock(pos);
-            }
-            // TODO: 可以优化为只删除不在新列表中的方块
-        }
-        foreach (var block in response.Blocks)
-        {
-            if (block.Position == null || block.Position.Length != 3) continue;
-            Vector3 pos = new Vector3(block.Position[0], block.Position[1], block.Position[2]);
-            Texture2D tex = TextureFromBase64(block.Texture);
-            Main(pos, tex); // Main会覆盖已存在的方块
-        }
-        // TODO: 对于增量更新，如有需要处理删除
     }
 
     /// <summary>

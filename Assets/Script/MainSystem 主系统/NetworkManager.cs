@@ -136,11 +136,11 @@ public class NetworkManager : MonoBehaviour
             {
                 Debug.Log($"成功获取到 {wrapper.items.Length} 个世界状态更新。");
                 // 此处日志可能过多，暂时注释掉，需要时可打开
-                foreach (var item in wrapper.items)
-                {
-                    Debug.Log(
-                        $"Block at ({item.block.point.x}, {item.block.point.y}, {item.block.point.z}) with type {item.block.block_info.type_id} and pubkey length {item.pub_key.Length}");
-                }
+                // foreach (var item in wrapper.items)
+                // {
+                //     Debug.Log(
+                //         $"Block at ({item.block.point.x}, {item.block.point.y}, {item.block.point.z}) with type {item.block.block_info.type_id} and pubkey length {item.pub_key.Length}");
+                // }
             }
             else
             {
