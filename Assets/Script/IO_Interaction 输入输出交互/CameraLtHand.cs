@@ -65,17 +65,33 @@ public class CameraLtHand : MonoBehaviour
 		moveSpeed = defaultMoveSpeed;//存储速度
 		verticalMoveSpeed = defaultVerticalMoveSpeed; // 存储默认上下移动速度
 
-		OutlineEffect outlineEffect = sYSManager.resourceManager.MainCamera.gameObject.AddComponent<OutlineEffect>();//描边脚本
-		outlineEffect.addLinesBetweenColors = true;
+		// 检查OutlineEffect组件是否存在，如果不存在则跳过
+		try
+		{
+			OutlineEffect outlineEffect = sYSManager.resourceManager.MainCamera.gameObject.AddComponent<OutlineEffect>();//描边脚本
+			outlineEffect.addLinesBetweenColors = true;
+		}
+		catch (System.Exception e)
+		{
+			Debug.LogWarning($"OutlineEffect组件添加失败: {e.Message}");
+		}
         
         // 创建线框可视化对象
         CreateWireframeVisualizer();
         
+        // 在构建后环境中，默认不隐藏光标，让用户可以看到鼠标
+        bool shouldHideCursor = hideCursor;
+        #if !UNITY_EDITOR
+            shouldHideCursor = false; // 构建后默认显示光标
+        #endif
+        
         // 初始化光标设置
-        SetCursorState(hideCursor);
+        SetCursorState(shouldHideCursor);
         
         // 初始化最后方块位置为无效值
         lastBlockPosition = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+        
+        Debug.Log("CameraLtHand初始化完成");
 	}
     
     /// <summary>
@@ -101,10 +117,34 @@ public class CameraLtHand : MonoBehaviour
     }
     
     /// <summary>
+    /// 切换光标状态（用于调试）
+    /// </summary>
+    public void ToggleCursorState()
+    {
+        SetCursorState(!isCursorHidden);
+        Debug.Log($"光标状态切换为: {(isCursorHidden ? "隐藏" : "显示")}");
+    }
+    
+    /// <summary>
+    /// 获取当前光标状态
+    /// </summary>
+    /// <returns>true表示光标隐藏，false表示光标显示</returns>
+    public bool IsCursorHidden()
+    {
+        return isCursorHidden;
+    }
+    
+    /// <summary>
     /// 处理按键输入
     /// </summary>
     private void HandleKeyInput()
     {
+        // ESC键切换光标状态（用于调试）
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ToggleCursorState();
+        }
+        
         // 计算目标垂直输入值
         float targetVerticalInput = 0f;
         
@@ -130,6 +170,19 @@ public class CameraLtHand : MonoBehaviour
 	/// </summary>
 	public void Main()
 	{
+        // 检查必要组件是否存在
+        if (sYSManager == null)
+        {
+            Debug.LogError("CameraLtHand: sYSManager为空");
+            return;
+        }
+        
+        if (sYSManager.resourceManager?.MainCamera == null)
+        {
+            Debug.LogError("CameraLtHand: MainCamera为空");
+            return;
+        }
+        
         // 处理按键输入
         HandleKeyInput();
         
@@ -155,7 +208,15 @@ public class CameraLtHand : MonoBehaviour
 				int i = 0;
 				bool[] isExecutionCompleted = new bool[4];//执行完毕
 
-				OutlineEffect.Instance?.ClearAllOutlines();//清理所有使用的Outline
+				// 安全地调用OutlineEffect
+				try
+				{
+					OutlineEffect.Instance?.ClearAllOutlines();//清理所有使用的Outline
+				}
+				catch (System.Exception e)
+				{
+					// OutlineEffect可能不存在，忽略错误
+				}
 
 
 				foreach (var hit in this.raycastHit)
@@ -176,6 +237,12 @@ public class CameraLtHand : MonoBehaviour
 		if (wireframeBlock != null)
 		{
 			wireframeBlock.SetActive(true);
+		}
+		else
+		{
+			// 如果线框不存在，尝试重新创建
+			Debug.LogWarning("线框方块不存在，尝试重新创建");
+			CreateWireframeVisualizer();
 		}
 		
 		// 更新线框方块位置，考虑碰撞检测
@@ -398,13 +465,21 @@ public class CameraLtHand : MonoBehaviour
 		if (sYSManager.userIntentManager != null)
 		{
 			sYSManager.userIntentManager.CreateBlock(roundedPosition);
+            var blockData = new BlockData();
+            blockData.block_info = new BlockInfoData();
+            blockData.point = new PointData();
+            blockData.block_info.type_id = "RED";
+            blockData.point.x = (int)roundedPosition.x;
+            blockData.point.y = (int)roundedPosition.y;
+            blockData.point.z = (int)roundedPosition.z;
+            sYSManager.networkManager.set_backend_block_once(blockData, 10);
 			Debug.Log("在位置 " + roundedPosition + " 创建了一个新方块（通过用户意图管理器）");
 		}
 		else
 		{
 			// 使用旧方式创建方块（备用）
 			Texture2D randomTexture = sYSManager.worldGenerator.CreateRandomTexture();
-			sYSManager.worldGenerator.Main(roundedPosition, randomTexture);
+			sYSManager.worldGenerator.Main(roundedPosition, randomTexture, new byte[0]);
 			Debug.Log("在位置 " + roundedPosition + " 创建了一个新方块");
 		}
 	}
@@ -472,6 +547,24 @@ public class CameraLtHand : MonoBehaviour
 
             // 应用旋转
             transform.eulerAngles = new Vector3(newPitch, transform.eulerAngles.y + mouseX, 0);
+        }
+        else
+        {
+            // 在构建后环境中，如果光标未锁定，也允许旋转（用于调试）
+            #if !UNITY_EDITOR
+            float mouseX = Input.GetAxis("Mouse X") * rotationSpeed * 0.02f;
+            float mouseY = Input.GetAxis("Mouse Y") * rotationSpeed * 0.02f;
+
+            // 当前的俯仰角度（绕X轴旋转）
+            float currentPitch = transform.eulerAngles.x;
+            if (currentPitch > 180) currentPitch -= 360; // 将范围从0-360转化为-180到180
+
+            // 限制俯仰角度
+            float newPitch = Mathf.Clamp(currentPitch - mouseY, -80f, 80f);
+
+            // 应用旋转
+            transform.eulerAngles = new Vector3(newPitch, transform.eulerAngles.y + mouseX, 0);
+            #endif
         }
     }
 }

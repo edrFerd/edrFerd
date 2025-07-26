@@ -213,7 +213,7 @@ public class VoxImporter : MonoBehaviour
                 int worldY = origin.y + voxel.Y;
                 int worldZ = origin.z + voxel.Z;
 
-                worldGenerator.CreateBlock(new Vector3(worldX, worldY, worldZ), blockTexture);
+                worldGenerator.CreateBlock(new Vector3(worldX, worldY, worldZ), blockTexture, new byte[0]);
             }
         }
         Debug.Log("[VoxImporter] Model rebuild complete.");

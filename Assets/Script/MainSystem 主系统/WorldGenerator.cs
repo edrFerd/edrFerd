@@ -11,8 +11,14 @@ public class WorldGenerator : MonoBehaviour
 
     // 方块位置和游戏对象的字典（用于记录每个方块的位置及其对应的GameObject实例）
     private Dictionary<Vector3, GameObject> blockDictionary_GameObject = new Dictionary<Vector3, GameObject>();
-
-
+    
+    // 方块位置和公钥的字典（用于记录每个方块的位置及其对应的公钥）
+    private Dictionary<Vector3, byte[]> blockDictionary_PubKey = new Dictionary<Vector3, byte[]>();
+    
+    // 材质管理系统
+    private Dictionary<string, Texture2D> materialDictionary = new Dictionary<string, Texture2D>();
+    private bool materialsInitialized = false;
+    
     // 系统管理器引用（用于与主系统交互）
     private SYSManager sysManager;
 
@@ -42,7 +48,127 @@ public class WorldGenerator : MonoBehaviour
         this.sysManager = manager;
         blockDictionary = new Dictionary<Vector3, Texture2D>();
         blockDictionary_GameObject = new Dictionary<Vector3, GameObject>();
+        blockDictionary_PubKey = new Dictionary<Vector3, byte[]>();
         CreateBlockRoot();
+        InitializeMaterials();
+    }
+    
+    /// <summary>
+    /// 初始化材质字典
+    /// </summary>
+    private void InitializeMaterials()
+    {
+        if (materialsInitialized) return;
+        
+        // 根据WOOLS表生成对应的材质
+        materialDictionary["RED"] = CreateSolidColorTexture(new Color(0.8f, 0.2f, 0.2f)); // 红色羊毛
+        materialDictionary["WHITE"] = CreateSolidColorTexture(new Color(0.9f, 0.9f, 0.9f)); // 白色羊毛
+        materialDictionary["PURPLE"] = CreateSolidColorTexture(new Color(0.6f, 0.2f, 0.8f)); // 紫色羊毛
+        materialDictionary["YELLOW"] = CreateSolidColorTexture(new Color(0.9f, 0.9f, 0.2f)); // 黄色羊毛
+        materialDictionary["PINK"] = CreateSolidColorTexture(new Color(0.9f, 0.6f, 0.8f)); // 粉色羊毛
+        materialDictionary["ORANGE"] = CreateSolidColorTexture(new Color(0.9f, 0.6f, 0.2f)); // 橙色羊毛
+        materialDictionary["BLUE"] = CreateSolidColorTexture(new Color(0.2f, 0.4f, 0.8f)); // 蓝色羊毛
+        materialDictionary["BROWN"] = CreateSolidColorTexture(new Color(0.6f, 0.4f, 0.2f)); // 棕色羊毛
+        materialDictionary["CYAN"] = CreateSolidColorTexture(new Color(0.2f, 0.8f, 0.8f)); // 青色羊毛
+        materialDictionary["LIME"] = CreateSolidColorTexture(new Color(0.6f, 0.9f, 0.2f)); // 黄绿色羊毛
+        materialDictionary["MAGENTA"] = CreateSolidColorTexture(new Color(0.8f, 0.2f, 0.8f)); // 品红色羊毛
+        materialDictionary["GRAY"] = CreateSolidColorTexture(new Color(0.5f, 0.5f, 0.5f)); // 灰色羊毛
+        materialDictionary["LIGHT_GRAY"] = CreateSolidColorTexture(new Color(0.7f, 0.7f, 0.7f)); // 浅灰色羊毛
+        materialDictionary["LIGHT_BLUE"] = CreateSolidColorTexture(new Color(0.6f, 0.8f, 0.9f)); // 浅蓝色羊毛
+        materialDictionary["GREEN"] = CreateSolidColorTexture(new Color(0.2f, 0.6f, 0.2f)); // 绿色羊毛
+        materialDictionary["BLACK"] = CreateSolidColorTexture(new Color(0.1f, 0.1f, 0.1f)); // 黑色羊毛
+        
+        // 添加一些默认材质
+        materialDictionary["RANDOM"] = CreateRandomTexture(); // 随机材质
+        materialDictionary["STONE"] = CreateSolidColorTexture(new Color(0.5f, 0.5f, 0.5f)); // 石头
+        materialDictionary["DIRT"] = CreateSolidColorTexture(new Color(0.6f, 0.4f, 0.2f)); // 泥土
+        materialDictionary["GRASS"] = CreateSolidColorTexture(new Color(0.3f, 0.7f, 0.3f)); // 草地
+        
+        // 注意：AIR类型不在此字典中，它会被特殊处理为删除方块
+        
+        materialsInitialized = true;
+        Debug.Log($"材质字典初始化完成，共加载 {materialDictionary.Count} 种材质");
+    }
+    
+    /// <summary>
+    /// 根据block_info获取对应的材质
+    /// </summary>
+    /// <param name="blockInfo">方块信息</param>
+    /// <returns>对应的材质纹理，如果返回null则表示需要删除方块</returns>
+    public Texture2D GetMaterialByBlockInfo(BlockInfoData blockInfo)
+    {
+        if (blockInfo == null || string.IsNullOrEmpty(blockInfo.type_id))
+        {
+            Debug.LogWarning("blockInfo为空或type_id为空，使用默认材质");
+            return GetDefaultMaterial();
+        }
+        
+        string typeId = blockInfo.type_id.ToUpper();
+        
+        // 特殊处理：air类型需要删除方块
+        if (typeId == "AIR")
+        {
+            Debug.Log("检测到AIR类型方块，需要删除");
+            return null; // 返回null表示需要删除方块
+        }
+        
+        // 尝试从材质字典中获取
+        if (materialDictionary.TryGetValue(typeId, out Texture2D material))
+        {
+            Debug.Log($"找到材质: {typeId}");
+            return material;
+        }
+        
+        // 如果没有找到，尝试解析数字ID
+        if (int.TryParse(typeId, out int numericId))
+        {
+            return GetMaterialByNumericId(numericId);
+        }
+        
+        Debug.LogWarning($"未找到材质: {typeId}，使用默认材质");
+        return GetDefaultMaterial();
+    }
+    
+    /// <summary>
+    /// 根据数字ID获取材质
+    /// </summary>
+    /// <param name="numericId">数字ID</param>
+    /// <returns>对应的材质纹理</returns>
+    private Texture2D GetMaterialByNumericId(int numericId)
+    {
+        switch (numericId)
+        {
+            case 1: return materialDictionary["RANDOM"];
+            case 2: return materialDictionary["RED"];
+            case 3: return materialDictionary["BLUE"];
+            case 4: return materialDictionary["GREEN"];
+            case 5: return materialDictionary["YELLOW"];
+            case 6: return materialDictionary["PURPLE"];
+            case 7: return materialDictionary["ORANGE"];
+            case 8: return materialDictionary["PINK"];
+            case 9: return materialDictionary["CYAN"];
+            case 10: return materialDictionary["LIME"];
+            case 11: return materialDictionary["MAGENTA"];
+            case 12: return materialDictionary["GRAY"];
+            case 13: return materialDictionary["LIGHT_GRAY"];
+            case 14: return materialDictionary["LIGHT_BLUE"];
+            case 15: return materialDictionary["BROWN"];
+            case 16: return materialDictionary["BLACK"];
+            case 17: return materialDictionary["WHITE"];
+            case 18: return materialDictionary["STONE"];
+            case 19: return materialDictionary["DIRT"];
+            case 20: return materialDictionary["GRASS"];
+            default: return GetDefaultMaterial();
+        }
+    }
+    
+    /// <summary>
+    /// 获取默认材质
+    /// </summary>
+    /// <returns>默认材质纹理</returns>
+    private Texture2D GetDefaultMaterial()
+    {
+        return materialDictionary["RANDOM"];
     }
 
     private void CreateBlockRoot()
@@ -69,13 +195,13 @@ public class WorldGenerator : MonoBehaviour
 
             return;
         }
-
+        
         // 如果该位置已存在方块，先删除它
         if (blockDictionary_GameObject.ContainsKey(position))
         {
             DeleteBlock(position);
         }
-
+        
         // 创建新方块
         blockDictionary.Add(position, texture);
         CreateBlock(position, texture, pubKey);
@@ -87,7 +213,7 @@ public class WorldGenerator : MonoBehaviour
     /// <param name="positions">方块位置数组</param>
     /// <param name="textures">方块纹理数组（可选）</param>
     public void Main(Vector3[] positions, Texture2D[] textures = null, byte[][] pubKey = null)
-    {
+        {
         if (positions.Length != textures.Length && positions.Length != pubKey.Length)
         {
             Debug.LogError("位置数组和纹理数组和pubKey数组长度不匹配");
@@ -129,6 +255,7 @@ public class WorldGenerator : MonoBehaviour
             Destroy(blockObject);
             blockDictionary_GameObject.Remove(position);
             blockDictionary.Remove(position);
+            blockDictionary_PubKey.Remove(position); // 删除公钥记录
             Debug.Log("已删除位置 " + position + " 的方块");
         }
         else
@@ -142,7 +269,7 @@ public class WorldGenerator : MonoBehaviour
     /// </summary>
     /// <param name="position">方块位置</param>
     /// <param name="texture">方块纹理</param>
-    public void CreateBlock(Vector3 position, Texture2D texture, byte[] pubKey
+    public void CreateBlock(Vector3 position, Texture2D texture, byte[] pubKey)
     {
         blockCounter++;
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -175,6 +302,7 @@ public class WorldGenerator : MonoBehaviour
         cube.name = string.Format("Block_{0}_{1}_{2}_{3}", blockCounter, position.x.ToString("F0"),
             position.y.ToString("F0"), position.z.ToString("F0"));
         blockDictionary_GameObject[position] = cube;
+        blockDictionary_PubKey[position] = pubKey; // 存储公钥
         Debug.Log("已创建方块: " + cube.name + ", 纹理大小: " + texture.width + "x" + texture.height + ", 着色器: " +
                   material.shader.name);
     }
@@ -304,7 +432,7 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
-
+    
     /// <summary>
     /// 创建默认纹理作为加载失败时的备用方案
     /// </summary>
@@ -335,9 +463,61 @@ public class WorldGenerator : MonoBehaviour
         {
             DeleteBlock(pos);
         }
-
         blockDictionary.Clear();
         blockDictionary_GameObject.Clear();
+        blockDictionary_PubKey.Clear(); // 清空公钥字典
+    }
+
+    /// <summary>
+    /// 设置方块及其公钥
+    /// </summary>
+    /// <param name="blockData">方块数据</param>
+    /// <param name="pubKey">公钥</param>
+    public void SetBlock(BlockData blockData, byte[] pubKey)
+    {
+        if (blockData?.point == null) return;
+        
+        Vector3 position = new Vector3(blockData.point.x, blockData.point.y, blockData.point.z);
+        
+        // 根据block_info获取对应的材质
+        Texture2D texture = GetMaterialByBlockInfo(blockData.block_info);
+        
+        // 如果texture为null，表示需要删除方块（如AIR类型）
+        if (texture == null)
+        {
+            if (blockDictionary_GameObject.ContainsKey(position))
+            {
+                Debug.Log($"SetBlock: 删除位置 {position} 的方块（AIR类型）");
+                DeleteBlock(position);
+            }
+            return;
+        }
+        
+        // 如果该位置已存在方块，先删除它
+        if (blockDictionary_GameObject.ContainsKey(position))
+        {
+            DeleteBlock(position);
+        }
+        
+        // 创建新方块
+        blockDictionary.Add(position, texture);
+        CreateBlock(position, texture, pubKey);
+        
+        Debug.Log($"SetBlock: 在位置 {position} 创建方块，类型: {blockData.block_info?.type_id ?? "未知"}");
+    }
+
+    /// <summary>
+    /// 获取指定位置方块的公钥
+    /// </summary>
+    /// <param name="position">方块位置</param>
+    /// <returns>公钥，如果不存在则返回null</returns>
+    public byte[] GetPubKey(Vector3 position)
+    {
+        if (blockDictionary_PubKey.TryGetValue(position, out byte[] pubKey))
+        {
+            return pubKey;
+        }
+        return null;
     }
 
     /// <summary>
@@ -351,18 +531,5 @@ public class WorldGenerator : MonoBehaviour
             Mathf.Round(placePosition.y),
             Mathf.Round(placePosition.z)
         );
-    }
-
-    /// <summary>
-    ///  调用这个函数，来修改世界中的方块
-    /// </summary>
-    /// <param name="block"></param>
-    public void SetBlock(BlockData block, byte[] pubKey)
-    {
-        var point = block.point;
-        var id = block.block_info.type_id;
-        Debug.Log($"设置坐标为({point.x}, {point.y}, {point.z})的方块为类型{id}");
-        // TODO 把这个函数完成
-        Main(new Vector3(block.point.x,block.point.y,block.point.z), new Texture2D(1,1));
     }
 }

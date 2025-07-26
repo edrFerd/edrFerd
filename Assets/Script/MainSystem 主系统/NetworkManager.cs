@@ -99,20 +99,46 @@ public class NetworkManager : MonoBehaviour
         this.worldGenerator = worldGenerator;
         httpClient = new HttpClient();
         Debug.Log("网络管理器初始化...");
+        
+        // 测试网络连接
+        TestNetworkConnection();
+        
         _ = GetPubKeyAsync();
 
         runCycle();
     }
 
+    /// <summary>
+    /// 测试网络连接
+    /// </summary>
+    private async void TestNetworkConnection()
+    {
+        try
+        {
+            Debug.Log($"测试网络连接到: {ServerUrl}");
+            var response = await httpClient.GetAsync($"{ServerUrl}/pubkey");
+            if (response.IsSuccessStatusCode)
+            {
+                Debug.Log("网络连接测试成功！");
+            }
+            else
+            {
+                Debug.LogWarning($"网络连接测试失败，状态码: {response.StatusCode}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"网络连接测试失败: {e.Message}");
+        }
+    }
+
     async void runCycle()
     {
-        Debug.Log("启动更新周期，首先获取完整世界状态...");
-        await GetWorldStateAsync();
-        Debug.Log("获取完整世界状态成功，开始更新循环...");
+        Debug.Log("启动更新周期，开始定期获取世界状态...");
         while (true)
         {
-            await GetTickUpdateAsync();
-            await Task.Delay((int)(tickUpdateInterval * 1000f));
+            await GetWorldStateAsync();
+            await Task.Delay(1000); // 每1秒更新一次世界状态
         }
     }
 
@@ -200,6 +226,73 @@ public class NetworkManager : MonoBehaviour
     {
         // 1. 定义API端点
         var url = $"{ServerUrl}/set_block";
+
+        // 2. 记录请求开始的日志，方便调试
+        Debug.Log(
+            $"开始向 {url} 发送 set_block 请求。方块位置: ({block.point.x}, {block.point.y}, {block.point.z}), 类型: {block.block_info.type_id}, 持续时间: {duration}");
+
+        try
+        {
+            // 3. 创建请求体数据对象，以匹配服务器期望的JSON格式
+            var requestData = new SetBlockRequestData
+            {
+                duration = duration,
+                x = block.point.x,
+                y = block.point.y,
+                z = block.point.z,
+                info = block.block_info
+            };
+
+            // 4. 将C#对象序列化为JSON字符串
+            string jsonPayload = JsonUtility.ToJson(requestData);
+            Debug.Log($"生成的JSON负载: {jsonPayload}");
+
+            // 5. 创建HTTP请求内容 (HttpContent)
+            //    - 使用 UTF8 编码
+            //    - 设置 Content-Type 为 "application/json"
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            // 6. 发送POST请求
+            //    使用 httpClient 实例发送异步POST请求
+            HttpResponseMessage response = await httpClient.PostAsync(url, content);
+
+            // 7. 检查响应状态并记录日志
+            if (response.IsSuccessStatusCode)
+            {
+                // 如果请求成功 (HTTP状态码 2xx)
+                string responseBody = await response.Content.ReadAsStringAsync();
+                Debug.Log($"set_block 请求成功。服务器响应: {responseBody}");
+            }
+            else
+            {
+                // 如果请求失败 (例如，HTTP状态码 4xx, 5xx)
+                string errorBody = await response.Content.ReadAsStringAsync();
+                Debug.LogError(
+                    $"set_block 请求失败。状态码: {response.StatusCode}, 原因: {response.ReasonPhrase}, 响应体: {errorBody}");
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            // 捕获网络相关的异常 (例如，无法连接到服务器)
+            Debug.LogError($"网络请求异常: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            // 捕获其他所有可能的异常 (例如，序列化失败)
+            Debug.LogError($"执行 set_backend_block 时发生未知错误: {e}");
+        }
+    }
+
+
+    /// <summary>
+    /// 对服务器声明once
+    /// </summary>
+    /// <param name="block"></param>
+    /// <param name="duration"></param>
+    public async Task set_backend_block_once(BlockData block, int duration)
+    {
+        // 1. 定义API端点
+        var url = $"{ServerUrl}/set_block_once";
 
         // 2. 记录请求开始的日志，方便调试
         Debug.Log(
