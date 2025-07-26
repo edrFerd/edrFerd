@@ -29,8 +29,6 @@ public class WorldMachine : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("hello, world\n");
-
         //子系统管理器初始化
         sYSManager = this.gameObject.AddComponent<SYSManager>();
         sYSManager.Init();
