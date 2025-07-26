@@ -316,23 +316,12 @@ public class CameraLtHand : MonoBehaviour
         // 检测是否有碰撞
         if (Physics.Raycast(ray, out hit, blockPlacementDistance * 2))
         {
-            // 有碰撞，获取碰撞点
-            Vector3 hitPoint = hit.point;
-            
-            // 根据碰撞面的法线确定放置位置（将方块放在碰撞面的相邻位置）
-            // 由于我们希望方块贴着碰撞面放置，所以从碰撞点沿法线方向稍微偏移一点
-            Vector3 placePosition = hitPoint + hit.normal * 0.5f; // 偏移0.5个单位，刚好是一个方块的中心点
-            
-            // 将位置四舍五入到整数坐标
-            roundedPosition = new Vector3(
-                Mathf.Round(placePosition.x),
-                Mathf.Round(placePosition.y),
-                Mathf.Round(placePosition.z)
-            );
+            // 直接将线框方块放到被碰撞方块的中心
+            roundedPosition = hit.transform.position;
             
             // Debug信息
             Debug.DrawRay(hit.point, hit.normal, Color.green, 0.1f);
-            Debug.Log("检测到碰撞，调整位置到: " + roundedPosition);
+            Debug.Log("检测到碰撞，线框方块对齐到方块中心: " + roundedPosition);
         }
         else
         {

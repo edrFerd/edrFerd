@@ -362,4 +362,4 @@ public class NetworkManager : MonoBehaviour
     private class IntArrayWrapper { public List<int> array; }
     [Serializable]
     private class BlockStateArrayWrapper { public List<BlockState> array; }
-} 
+}
