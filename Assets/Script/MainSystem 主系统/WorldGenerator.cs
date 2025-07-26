@@ -329,4 +329,17 @@ public class WorldGenerator : MonoBehaviour
         }
         // TODO: 对于增量更新，如有需要处理删除
     }
+
+    /// <summary>
+    /// 清空所有方块（用于同步世界状态时重置）
+    /// </summary>
+    public void ClearAllBlocks()
+    {
+        foreach (var pos in new List<Vector3>(blockDictionary_GameObject.Keys))
+        {
+            DeleteBlock(pos);
+        }
+        blockDictionary.Clear();
+        blockDictionary_GameObject.Clear();
+    }
 }

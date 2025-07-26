@@ -34,7 +34,7 @@ public class SYSManager : MonoBehaviour
         worldGenerator.Init(this);
 
         this.networkManager = this.gameObject.AddComponent<NetworkManager>();
-        networkManager.Init();
+        networkManager.Init(this);
         
         // 初始化UI管理器
         this.uiManager = this.gameObject.AddComponent<UIManager>();

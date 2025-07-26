@@ -385,49 +385,25 @@ public class CameraLtHand : MonoBehaviour
     }
 	
 	/// <summary>
-	/// 检测鼠标右键点击，创建随机位置和材质的方块
-	/// </summary>
-	private void CheckMouseInputForBlockCreation()
-	{
-		// 检测鼠标右键点击，并确保系统管理器和事件系统存在
-		if (Input.GetMouseButtonDown(1) && 
-		    (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject()))
-		{
-			// 使用摄像机前方位置创建方块，而不是随机位置
-			CreateBlockInFront();
-		}
-	}
-	
-	/// <summary>
 	/// 在摄像机前方指定距离处创建方块
 	/// </summary>
 	private void CreateBlockInFront()
 	{
 		// 使用已经计算好的目标位置
         Vector3 roundedPosition = currentTargetPosition;
-		
-		// 10%的概率执行删除操作
-		if (UnityEngine.Random.value < 0.1f)
+		// 只进行方块创建，不再有概率删除逻辑
+		// 使用用户意图管理器创建方块（如果可用）
+		if (sYSManager.userIntentManager != null)
 		{
-			// 删除操作时传入null材质
-			Debug.Log("执行删除操作，位置：" + roundedPosition);
-			sYSManager.worldGenerator.Main(roundedPosition, null);
+			sYSManager.userIntentManager.CreateBlock(roundedPosition);
+			Debug.Log("在位置 " + roundedPosition + " 创建了一个新方块（通过用户意图管理器）");
 		}
 		else
 		{
-		    // 使用用户意图管理器创建方块（如果可用）
-		    if (sYSManager.userIntentManager != null)
-		    {
-		        sYSManager.userIntentManager.CreateBlock(roundedPosition);
-		        Debug.Log("在位置 " + roundedPosition + " 创建了一个新方块（通过用户意图管理器）");
-		    }
-		    else
-		    {
-			    // 使用旧方式创建方块（备用）
+			// 使用旧方式创建方块（备用）
 			Texture2D randomTexture = sYSManager.worldGenerator.CreateRandomTexture();
 			sYSManager.worldGenerator.Main(roundedPosition, randomTexture);
 			Debug.Log("在位置 " + roundedPosition + " 创建了一个新方块");
-		    }
 		}
 	}
     
