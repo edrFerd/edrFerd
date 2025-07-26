@@ -377,8 +377,6 @@ public class BlockPreviewRenderer
         previewScene = new GameObject("BlockPreviewScene");
         previewScene.hideFlags = HideFlags.HideAndDontSave;
         previewScene.layer = LayerMask.NameToLayer("Ignore Raycast");
-        // 初始将预览场景移动到世界中心之外的远处，防止影响主世界
-        previewScene.transform.position = new Vector3(1000000f, 1000000f, 1000000f);
         
         // 创建预览相机
         GameObject cameraObj = new GameObject("PreviewCamera");
@@ -393,10 +391,8 @@ public class BlockPreviewRenderer
         previewCamera.nearClipPlane = 0.01f;
         previewCamera.farClipPlane = 100f;
         previewCamera.enabled = false;
-        // 将相机设为相对于预览场景根的本地偏移
-        cameraObj.transform.localPosition = new Vector3(1.2f, 1.2f, 1.2f);
-        // 使相机朝向预览方块所在的场景根位置
-        previewCamera.transform.LookAt(previewScene.transform.position);
+        previewCamera.transform.position = new Vector3(1.2f, 1.2f, 1.2f);
+        previewCamera.transform.LookAt(Vector3.zero);
         previewCamera.renderingPath = RenderingPath.Forward;
         
         // 创建预览方块

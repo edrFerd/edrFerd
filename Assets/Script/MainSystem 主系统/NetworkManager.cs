@@ -153,7 +153,7 @@ public class NetworkManager : MonoBehaviour
                 // 此处日志可能过多，暂时注释掉，需要时可打开
                 foreach (var item in wrapper.items)
                 {
-                    worldGenerator.SetBlock(item.block);
+                    worldGenerator.SetBlock(item.block, item.pub_key);
                 }
             }
             else
@@ -181,7 +181,7 @@ public class NetworkManager : MonoBehaviour
                 Debug.Log($"接收到 {wrapper.items.Length} 个Tick更新。");
                 foreach (var item in wrapper.items)
                 {
-                    worldGenerator.SetBlock(item.block.block);
+                    worldGenerator.SetBlock(item.block.block, item.block.pub_key);
                 }
             }
         }
@@ -190,6 +190,7 @@ public class NetworkManager : MonoBehaviour
             Debug.LogError($"GetTickUpdateAsync error: {e}");
         }
     }
+
     /// <summary>
     /// 对服务器声明一个方块的状态
     /// </summary>
@@ -292,7 +293,8 @@ public class NetworkManager : MonoBehaviour
             {
                 // 如果请求失败
                 string errorBody = await response.Content.ReadAsStringAsync();
-                Debug.LogError($"remove_block 请求失败。状态码: {response.StatusCode}, 原因: {response.ReasonPhrase}, 响应体: {errorBody}");
+                Debug.LogError(
+                    $"remove_block 请求失败。状态码: {response.StatusCode}, 原因: {response.ReasonPhrase}, 响应体: {errorBody}");
             }
         }
         catch (HttpRequestException e)
@@ -307,4 +309,3 @@ public class NetworkManager : MonoBehaviour
         }
     }
 }
-

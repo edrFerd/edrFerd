@@ -355,7 +355,7 @@ public class WorldGenerator : MonoBehaviour
     ///  调用这个函数，来修改世界中的方块
     /// </summary>
     /// <param name="block"></param>
-    public void SetBlock(BlockData block)
+    public void SetBlock(BlockData block, byte[] pubKey)
     {
         var point = block.point;
         var id = block.block_info.type_id;
