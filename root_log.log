@@ -1,5 +1,16 @@
-=== 开始尝试初始化日志系统: 2025/7/26 13:29:47 ===
+=== 开始尝试初始化日志系统: 2025/7/26 13:42:29 ===
 日志目录路径: D:/1_Project/2025.07 adventureX 2025/edrFerd/Assets\Log
 日志文件路径: D:/1_Project/2025.07 adventureX 2025/edrFerd/Assets\Log\log.log
 成功创建日志文件
+创建日志文件失败: Sharing violation on path D:\1_Project\2025.07 adventureX 2025\edrFerd\root_log.log
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <4780199c95764436ade50bbd58f63488>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <4780199c95764436ade50bbd58f63488>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <4780199c95764436ade50bbd58f63488>:0 
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append) [0x00008] in <4780199c95764436ade50bbd58f63488>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool)
+  at System.IO.File.AppendAllText (System.String path, System.String contents) [0x00026] in <4780199c95764436ade50bbd58f63488>:0 
+  at CustomLogger.Initialize () [0x00130] in D:\1_Project\2025.07 adventureX 2025\edrFerd\Assets\Scripts\CustomLogger.cs:70 
+日志系统初始化完成
+使用备用日志位置: C:/Users/erduotong/AppData/LocalLow/DefaultCompany/edrFerd\Logs\log.log
 日志系统初始化完成

@@ -6,4 +6,4 @@
   at System.IO.StreamWriter..ctor (System.String path, System.Boolean append) [0x00008] in <4780199c95764436ade50bbd58f63488>:0 
   at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool)
   at System.IO.File.AppendAllText (System.String path, System.String contents) [0x00026] in <4780199c95764436ade50bbd58f63488>:0 
-  at CustomLogger.Initialize () [0x00202] in D:\1_Project\2025.07 adventureX 2025\edrFerd\Assets\Scripts\CustomLogger.cs:87 
+  at CustomLogger.Initialize () [0x0004b] in D:\1_Project\2025.07 adventureX 2025\edrFerd\Assets\Scripts\CustomLogger.cs:43 
