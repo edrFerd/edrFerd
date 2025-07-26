@@ -78,10 +78,12 @@ public class NetworkManager : MonoBehaviour
 
     private const string ServerUrl = "http://localhost:1416";
     private HttpClient httpClient;
+    private WorldGenerator worldGenerator;
 
     /// <summary>初始化网络管理器，获取必要数据并启动更新循环。</summary>
-    public void Init(SYSManager manager)
+    public void Init(SYSManager manager, WorldGenerator worldGenerator)
     {
+        this.worldGenerator = worldGenerator;
         httpClient = new HttpClient();
         Debug.Log("网络管理器初始化...");
         _ = GetPubKeyAsync();
@@ -136,11 +138,10 @@ public class NetworkManager : MonoBehaviour
             {
                 Debug.Log($"成功获取到 {wrapper.items.Length} 个世界状态更新。");
                 // 此处日志可能过多，暂时注释掉，需要时可打开
-                // foreach (var item in wrapper.items)
-                // {
-                //     Debug.Log(
-                //         $"Block at ({item.block.point.x}, {item.block.point.y}, {item.block.point.z}) with type {item.block.block_info.type_id} and pubkey length {item.pub_key.Length}");
-                // }
+                foreach (var item in wrapper.items)
+                {
+                    worldGenerator.SetBlock(item.block);
+                }
             }
             else
             {
@@ -165,14 +166,10 @@ public class NetworkManager : MonoBehaviour
             if (wrapper != null && wrapper.items != null && wrapper.items.Length > 0)
             {
                 Debug.Log($"接收到 {wrapper.items.Length} 个Tick更新。");
-                // 展示一下
                 foreach (var item in wrapper.items)
                 {
-                    Debug.Log(
-                        $"更新: 方块: (x:{item.block.block.point.x}, y:{item.block.block.point.y}, z:{item.block.block.point.z}), 时间戳: {item.timestamp}, 公钥长度: {item.block.pub_key.Length}"
-                    );
+                    worldGenerator.SetBlock(item.block.block);
                 }
-                // TODO 处理Tick更新
             }
         }
         catch (Exception e)

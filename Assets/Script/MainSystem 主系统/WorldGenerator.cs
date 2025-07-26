@@ -8,12 +8,16 @@ public class WorldGenerator : MonoBehaviour
 {
     // 方块位置和纹理的字典（用于记录每个方块的位置及其对应的纹理）
     private Dictionary<Vector3, Texture2D> blockDictionary = new Dictionary<Vector3, Texture2D>();
+
     // 方块位置和游戏对象的字典（用于记录每个方块的位置及其对应的GameObject实例）
     private Dictionary<Vector3, GameObject> blockDictionary_GameObject = new Dictionary<Vector3, GameObject>();
+
     // 系统管理器引用（用于与主系统交互）
     private SYSManager sysManager;
+
     // 全局方块计数器（用于生成唯一的方块名称）
     private static long blockCounter = 0;
+
     // 方块基础颜色数组（用于生成不同类型的方块纹理）
     private Color[] blockColors = new Color[]
     {
@@ -22,8 +26,9 @@ public class WorldGenerator : MonoBehaviour
         new Color(0.53f, 0.53f, 0.53f), // 石头
         new Color(0.18f, 0.38f, 0.18f), // 草地
         new Color(0.54f, 0.27f, 0.07f), // 红棕色
-        new Color(0.1f, 0.1f, 0.1f),    // 深灰色
+        new Color(0.1f, 0.1f, 0.1f), // 深灰色
     };
+
     // 所有方块的父对象（用于层级管理）
     private GameObject blockRoot;
 
@@ -60,15 +65,16 @@ public class WorldGenerator : MonoBehaviour
                 DeleteBlock(position);
                 return;
             }
+
             return;
         }
-        
+
         // 如果该位置已存在方块，先删除它
         if (blockDictionary_GameObject.ContainsKey(position))
         {
             DeleteBlock(position);
         }
-        
+
         // 创建新方块
         blockDictionary.Add(position, texture);
         CreateBlock(position, texture);
@@ -86,11 +92,13 @@ public class WorldGenerator : MonoBehaviour
             textures = new Texture2D[positions.Length];
             for (int i = 0; i < positions.Length; i++) textures[i] = null;
         }
+
         if (positions.Length != textures.Length)
         {
             Debug.LogError("位置数组和纹理数组长度不匹配");
             return;
         }
+
         for (int i = 0; i < positions.Length; i++)
         {
             Main(positions[i], textures[i]);
@@ -156,14 +164,17 @@ public class WorldGenerator : MonoBehaviour
             material.SetFloat("_Glossiness", 0.0f);
             material.SetFloat("_Metallic", 0.0f);
         }
+
         material.color = Color.white;
         material.mainTexture = texture;
         material.mainTextureScale = Vector3.one;
         Renderer renderer = cube.GetComponent<Renderer>();
         renderer.material = material;
-        cube.name = string.Format("Block_{0}_{1}_{2}_{3}", blockCounter, position.x.ToString("F0"), position.y.ToString("F0"), position.z.ToString("F0"));
+        cube.name = string.Format("Block_{0}_{1}_{2}_{3}", blockCounter, position.x.ToString("F0"),
+            position.y.ToString("F0"), position.z.ToString("F0"));
         blockDictionary_GameObject[position] = cube;
-        Debug.Log("已创建方块: " + cube.name + ", 纹理大小: " + texture.width + "x" + texture.height + ", 着色器: " + material.shader.name);
+        Debug.Log("已创建方块: " + cube.name + ", 纹理大小: " + texture.width + "x" + texture.height + ", 着色器: " +
+                  material.shader.name);
     }
 
     /// <summary>
@@ -218,8 +229,10 @@ public class WorldGenerator : MonoBehaviour
                     }
                 }
             }
+
             texture.Apply();
-            Debug.Log("已创建随机纹理 - 大小: " + texture.width + "x" + texture.height + ", 格式: " + texture.format + ", 基础颜色: " + baseColor);
+            Debug.Log("已创建随机纹理 - 大小: " + texture.width + "x" + texture.height + ", 格式: " + texture.format + ", 基础颜色: " +
+                      baseColor);
             return texture;
         }
         catch (System.Exception e)
@@ -234,6 +247,7 @@ public class WorldGenerator : MonoBehaviour
                     fallbackTexture.SetPixel(x, y, fallbackColor);
                 }
             }
+
             fallbackTexture.Apply();
             return fallbackTexture;
         }
@@ -264,8 +278,10 @@ public class WorldGenerator : MonoBehaviour
                     texture.SetPixel(x, y, pixelColor);
                 }
             }
+
             texture.Apply();
-            Debug.Log("已创建纯色纹理 - 大小: " + texture.width + "x" + texture.height + ", 格式: " + texture.format + ", 基础颜色: " + color);
+            Debug.Log("已创建纯色纹理 - 大小: " + texture.width + "x" + texture.height + ", 格式: " + texture.format + ", 基础颜色: " +
+                      color);
             return texture;
         }
         catch (System.Exception e)
@@ -280,6 +296,7 @@ public class WorldGenerator : MonoBehaviour
                     fallbackTexture.SetPixel(x, y, fallbackColor);
                 }
             }
+
             fallbackTexture.Apply();
             return fallbackTexture;
         }
@@ -300,6 +317,7 @@ public class WorldGenerator : MonoBehaviour
                 tex.SetPixel(x, y, defaultColor);
             }
         }
+
         tex.filterMode = FilterMode.Point;
         tex.wrapMode = TextureWrapMode.Repeat;
         tex.Apply();
@@ -315,6 +333,7 @@ public class WorldGenerator : MonoBehaviour
         {
             DeleteBlock(pos);
         }
+
         blockDictionary.Clear();
         blockDictionary_GameObject.Clear();
     }
@@ -330,5 +349,17 @@ public class WorldGenerator : MonoBehaviour
             Mathf.Round(placePosition.y),
             Mathf.Round(placePosition.z)
         );
+    }
+    /// <summary>
+    ///  调用这个函数，来修改世界中的方块
+    /// </summary>
+    /// <param name="block"></param>
+    public void SetBlock(BlockData block)
+    {
+        var point = block.point;
+        var id = block.block_info.type_id;
+        
+        // TODO 把这个函数完成
+        
     }
 }
