@@ -114,8 +114,8 @@ public class CameraLtHand : MonoBehaviour
             targetVerticalInput += 1.0f;
         }
         
-        // Ctrl键按下时，向下移动（负值）
-        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        // Shift键按下时，向下移动（负值）
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             targetVerticalInput -= 1.0f;
         }
@@ -181,7 +181,7 @@ public class CameraLtHand : MonoBehaviour
 		// 更新线框方块位置，考虑碰撞检测
 		UpdateWireframeBlockPosition();
 		
-		// 检测鼠标左键操作，处理方块创建
+		// 检测鼠标右键操作，处理方块创建
 		HandleContinuousBlockCreation();
 	}
 	//---------------------------处理指针移动-----------------------------
@@ -319,16 +319,16 @@ public class CameraLtHand : MonoBehaviour
     }
 	
 	/// <summary>
-    /// 处理连续方块创建（按住鼠标左键拖动）
+    /// 处理连续方块创建（按住鼠标右键拖动）
     /// </summary>
     private void HandleContinuousBlockCreation()
     {
-        // 检测鼠标左键按下，开始创建方块
-        if (Input.GetMouseButtonDown(0) && 
+        // 检测鼠标右键按下，开始创建方块
+        if (Input.GetMouseButtonDown(1) && 
             (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject()) && 
-            !isMouseLeftHeld) // 确保上次操作已完成（左键已抬起）
+            !isMouseLeftHeld) // 确保上次操作已完成（右键已抬起）
         {
-            // 鼠标左键按下，开始创建方块
+            // 鼠标右键按下，开始创建方块
             isMouseLeftHeld = true;
             // 立即创建一个方块
             TryCreateBlockAtCurrentPosition();
@@ -337,10 +337,10 @@ public class CameraLtHand : MonoBehaviour
             lastBlockPosition = currentTargetPosition;
         }
         
-        // 检测鼠标左键抬起，停止创建方块
-        if (Input.GetMouseButtonUp(0))
+        // 检测鼠标右键抬起，停止创建方块
+        if (Input.GetMouseButtonUp(1))
         {
-            // 鼠标左键抬起，停止创建方块
+            // 鼠标右键抬起，停止创建方块
             isMouseLeftHeld = false;
             // 重置上次创建的方块位置为一个不可能的值
             lastBlockPosition = new Vector3(float.MinValue, float.MinValue, float.MinValue);
@@ -348,7 +348,7 @@ public class CameraLtHand : MonoBehaviour
         
         // 移除此部分逻辑，不再在按住状态下创建多个方块
         /*
-        // 如果鼠标左键被按住，检查是否需要创建新方块
+        // 如果鼠标右键被按住，检查是否需要创建新方块
         if (isMouseLeftHeld)
         {
             // 计算当前位置与上次位置的距离
@@ -385,12 +385,12 @@ public class CameraLtHand : MonoBehaviour
     }
 	
 	/// <summary>
-	/// 检测鼠标左键点击，创建随机位置和材质的方块
+	/// 检测鼠标右键点击，创建随机位置和材质的方块
 	/// </summary>
 	private void CheckMouseInputForBlockCreation()
 	{
-		// 检测鼠标左键点击，并确保系统管理器和事件系统存在
-		if (Input.GetMouseButtonDown(0) && 
+		// 检测鼠标右键点击，并确保系统管理器和事件系统存在
+		if (Input.GetMouseButtonDown(1) && 
 		    (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject()))
 		{
 			// 使用摄像机前方位置创建方块，而不是随机位置
@@ -440,8 +440,8 @@ public class CameraLtHand : MonoBehaviour
         float horizontalInput = Input.GetAxis("Horizontal"); // A, D or 左右箭头
         float forwardInput = Input.GetAxis("Vertical");     // W, S or 上下箭头
 
-        // 如果按下Shift键，水平和垂直移动速度每帧递增1%，否则恢复默认速度
-        if (Input.GetKey(KeyCode.LeftShift))
+        // 如果按下Ctrl键，水平和垂直移动速度每帧递增1%，否则恢复默认速度
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
         {
             moveSpeed *= 1.01f;
             verticalMoveSpeed *= 1.01f; // 垂直速度也增加
