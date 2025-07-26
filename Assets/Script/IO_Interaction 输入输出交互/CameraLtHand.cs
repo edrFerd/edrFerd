@@ -204,10 +204,10 @@ public class CameraLtHand : MonoBehaviour
 		if (Physics.Raycast(ray, out hit, blockPlacementDistance))
 		{
 			// 确保击中的是方块（可以根据tag或layer进一步判断）
-			if (hit.collider.gameObject.name.Contains("chunk_")) // 这是一个简单的判断，您可能需要更精确的方式
+			if (hit.collider.gameObject.name.Contains("Block_")) // 修改为适配Block_命名
 			{
 				// 获取击中点所在的方块的中心位置
-				Vector3 blockCenter = sYSManager.worldGenerator.GetBlockCenter(hit.point, hit.normal);
+				Vector3 blockCenter = sYSManager.worldGenerator.GetBlockCenter(hit.point, -hit.normal);
 
 				// 使用用户意图管理器删除方块
 				if (sYSManager.userIntentManager != null)
