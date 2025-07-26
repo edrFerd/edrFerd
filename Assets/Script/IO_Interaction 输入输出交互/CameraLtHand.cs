@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -183,13 +183,47 @@ public class CameraLtHand : MonoBehaviour
 		
 		// 检测鼠标右键操作，处理方块创建
 		HandleContinuousBlockCreation();
+
+		// 处理方块删除
+		if (Input.GetMouseButtonDown(0))
+		{
+			HandleBlockDeletion();
+		}
 	}
-	//---------------------------处理指针移动-----------------------------
-    
-    /// <summary>
-    /// 创建线框可视化对象
-    /// </summary>
-    private void CreateWireframeVisualizer()
+
+	/// <summary>
+	/// 处理方块删除
+	/// </summary>
+	private void HandleBlockDeletion()
+	{
+		// 从摄像机中心发射射线
+		Ray ray = sYSManager.resourceManager.MainCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+		RaycastHit hit;
+
+		// 如果射线击中任何物体
+		if (Physics.Raycast(ray, out hit, blockPlacementDistance))
+		{
+			// 确保击中的是方块（可以根据tag或layer进一步判断）
+			if (hit.collider.gameObject.name.Contains("chunk_")) // 这是一个简单的判断，您可能需要更精确的方式
+			{
+				// 获取击中点所在的方块的中心位置
+				Vector3 blockCenter = sYSManager.worldGenerator.GetBlockCenter(hit.point, hit.normal);
+
+				// 使用用户意图管理器删除方块
+				if (sYSManager.userIntentManager != null)
+				{
+					sYSManager.userIntentManager.DeleteBlock(blockCenter);
+					Debug.Log("在位置 " + blockCenter + " 删除了一个方块");
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// 创建线框可视化对象
+	/// </summary>
+	private void CreateWireframeVisualizer()
+	{
     {
         // 创建线框材质
         wireframeMaterial = new Material(Shader.Find("Standard"));
