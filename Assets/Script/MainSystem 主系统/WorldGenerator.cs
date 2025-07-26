@@ -350,6 +350,7 @@ public class WorldGenerator : MonoBehaviour
             Mathf.Round(placePosition.z)
         );
     }
+
     /// <summary>
     ///  调用这个函数，来修改世界中的方块
     /// </summary>
@@ -358,8 +359,8 @@ public class WorldGenerator : MonoBehaviour
     {
         var point = block.point;
         var id = block.block_info.type_id;
-        
+        Debug.Log($"设置坐标为({point.x}, {point.y}, {point.z})的方块为类型{id}");
         // TODO 把这个函数完成
-        
+        Main(new Vector3(block.point.x,block.point.y,block.point.z), new Texture2D(1,1));
     }
 }

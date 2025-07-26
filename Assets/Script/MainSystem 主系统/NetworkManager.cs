@@ -177,4 +177,10 @@ public class NetworkManager : MonoBehaviour
             Debug.LogError($"GetTickUpdateAsync error: {e}");
         }
     }
+
+    public async Task set_backend_block(BlockData block, int duration)
+    {
+        var url = $"{ServerUrl}/set_block";
+
+    }
 }
