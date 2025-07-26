@@ -12,6 +12,7 @@ public class WorldGenerator : MonoBehaviour
     // 方块位置和游戏对象的字典（用于记录每个方块的位置及其对应的GameObject实例）
     private Dictionary<Vector3, GameObject> blockDictionary_GameObject = new Dictionary<Vector3, GameObject>();
 
+
     // 系统管理器引用（用于与主系统交互）
     private SYSManager sysManager;
 
@@ -56,9 +57,9 @@ public class WorldGenerator : MonoBehaviour
     /// </summary>
     /// <param name="position">方块位置</param>
     /// <param name="texture">方块纹理（可选）</param>
-    public void Main(Vector3 position, Texture2D texture = null)
+    public void Main(Vector3 position, Texture2D texture = null, byte[] pubKey = null)
     {
-        if (texture == null)
+        if (texture == null && pubKey == null)
         {
             if (blockDictionary_GameObject.ContainsKey(position))
             {
@@ -77,7 +78,7 @@ public class WorldGenerator : MonoBehaviour
 
         // 创建新方块
         blockDictionary.Add(position, texture);
-        CreateBlock(position, texture);
+        CreateBlock(position, texture, pubKey);
     }
 
     /// <summary>
@@ -85,23 +86,25 @@ public class WorldGenerator : MonoBehaviour
     /// </summary>
     /// <param name="positions">方块位置数组</param>
     /// <param name="textures">方块纹理数组（可选）</param>
-    public void Main(Vector3[] positions, Texture2D[] textures = null)
+    public void Main(Vector3[] positions, Texture2D[] textures = null, byte[][] pubKey = null)
     {
-        if (textures == null)
+        if (positions.Length != textures.Length && positions.Length != pubKey.Length)
         {
-            textures = new Texture2D[positions.Length];
-            for (int i = 0; i < positions.Length; i++) textures[i] = null;
-        }
-
-        if (positions.Length != textures.Length)
-        {
-            Debug.LogError("位置数组和纹理数组长度不匹配");
+            Debug.LogError("位置数组和纹理数组和pubKey数组长度不匹配");
             return;
         }
 
         for (int i = 0; i < positions.Length; i++)
         {
-            Main(positions[i], textures[i]);
+            if (textures == null || pubKey == null)
+            {
+                Main(positions[i], null, null);
+            }
+            else
+            {
+                Main(positions[i], textures[i], pubKey[i]);
+            }
+
         }
     }
 
@@ -139,7 +142,7 @@ public class WorldGenerator : MonoBehaviour
     /// </summary>
     /// <param name="position">方块位置</param>
     /// <param name="texture">方块纹理</param>
-    public void CreateBlock(Vector3 position, Texture2D texture)
+    public void CreateBlock(Vector3 position, Texture2D texture, byte[] pubKey
     {
         blockCounter++;
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -148,7 +151,6 @@ public class WorldGenerator : MonoBehaviour
         cube.transform.SetParent(blockRoot.transform);
         texture.filterMode = FilterMode.Point;
         texture.wrapMode = TextureWrapMode.Repeat;
-        texture.Apply();
         Material material = null;
         if (Shader.Find("Unlit/Texture") != null)
         {

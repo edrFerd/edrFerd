@@ -111,7 +111,7 @@ public class BlockSelectorUI : BaseUI
         // 设置前三个槽位的方块类型
         blockSlots[0].SetBlockType("随机", new Color(0.8f, 0.8f, 0.8f, 1));
         blockSlots[1].SetBlockType("红色", new Color(0.9f, 0.3f, 0.3f, 1));
-        blockSlots[2].SetBlockType("蓝色", new Color(0.3f, 0.5f, 0.9f, 1));
+        // blockSlots[2].SetBlockType("蓝色", new Color(0.3f, 0.5f, 0.9f, 1));
     }
     
     /// <summary>

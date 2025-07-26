@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -305,33 +305,13 @@ public class CameraLtHand : MonoBehaviour
     {
         if (wireframeBlock == null) return;
         
-        // 从摄像机位置发射射线
-        Ray ray = new Ray(transform.position, transform.forward);
-        RaycastHit hit;
-        
-        // 默认位置（无碰撞时）：摄像机前方指定距离的位置
+        // 计算并更新线框方块位置：始终在摄像机前方指定距离，并进行网格对齐
         Vector3 position = transform.position + transform.forward * blockPlacementDistance;
-        Vector3 roundedPosition;
-        
-        // 检测是否有碰撞
-        if (Physics.Raycast(ray, out hit, blockPlacementDistance * 2))
-        {
-            // 直接将线框方块放到被碰撞方块的中心
-            roundedPosition = hit.transform.position;
-            
-            // Debug信息
-            Debug.DrawRay(hit.point, hit.normal, Color.green, 0.1f);
-            Debug.Log("检测到碰撞，线框方块对齐到方块中心: " + roundedPosition);
-        }
-        else
-        {
-            // 无碰撞，使用默认位置
-            roundedPosition = new Vector3(
-                Mathf.Round(position.x),
-                Mathf.Round(position.y),
-                Mathf.Round(position.z)
-            );
-        }
+        Vector3 roundedPosition = new Vector3(
+            Mathf.Round(position.x),
+            Mathf.Round(position.y),
+            Mathf.Round(position.z)
+        );
         
         // 保存当前目标位置
         currentTargetPosition = roundedPosition;
