@@ -2,16 +2,19 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// 世界生成器
+/// 世界生成器，负责在场景中生成、管理和销毁方块对象
 /// </summary>
 public class WorldGenerator : MonoBehaviour
 {
-    // 方块位置和纹理的字典
+    // 方块位置和纹理的字典（用于记录每个方块的位置及其对应的纹理）
     private Dictionary<Vector3, Texture2D> blockDictionary = new Dictionary<Vector3, Texture2D>();
-    // 方块位置和游戏对象的字典
+    // 方块位置和游戏对象的字典（用于记录每个方块的位置及其对应的GameObject实例）
     private Dictionary<Vector3, GameObject> blockDictionary_GameObject = new Dictionary<Vector3, GameObject>();
+    // 系统管理器引用（用于与主系统交互）
     private SYSManager sysManager;
+    // 全局方块计数器（用于生成唯一的方块名称）
     private static long blockCounter = 0;
+    // 方块基础颜色数组（用于生成不同类型的方块纹理）
     private Color[] blockColors = new Color[]
     {
         new Color(0.76f, 0.69f, 0.5f), // 沙子
@@ -21,8 +24,13 @@ public class WorldGenerator : MonoBehaviour
         new Color(0.54f, 0.27f, 0.07f), // 红棕色
         new Color(0.1f, 0.1f, 0.1f),    // 深灰色
     };
+    // 所有方块的父对象（用于层级管理）
     private GameObject blockRoot;
 
+    /// <summary>
+    /// 初始化世界生成器，绑定主系统管理器并重置方块字典
+    /// </summary>
+    /// <param name="manager">主系统管理器</param>
     public void Init(SYSManager manager)
     {
         this.sysManager = manager;
@@ -33,10 +41,16 @@ public class WorldGenerator : MonoBehaviour
 
     private void CreateBlockRoot()
     {
+        // 创建一个空的父对象用于管理所有方块，便于统一操作和清理
         blockRoot = new GameObject("BlockRoot");
         blockRoot.transform.position = Vector3.zero;
     }
 
+    /// <summary>
+    /// 在指定位置生成或删除方块（如果传入纹理为null则删除该位置的方块，否则生成/替换）
+    /// </summary>
+    /// <param name="position">方块位置</param>
+    /// <param name="texture">方块纹理（可选）</param>
     public void Main(Vector3 position, Texture2D texture = null)
     {
         if (texture == null)
@@ -60,6 +74,11 @@ public class WorldGenerator : MonoBehaviour
         CreateBlock(position, texture);
     }
 
+    /// <summary>
+    /// 批量生成或删除方块（支持批量操作，纹理数组可选）
+    /// </summary>
+    /// <param name="positions">方块位置数组</param>
+    /// <param name="textures">方块纹理数组（可选）</param>
     public void Main(Vector3[] positions, Texture2D[] textures = null)
     {
         if (textures == null)
@@ -78,11 +97,20 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 判断指定位置是否存在方块
+    /// </summary>
+    /// <param name="position">方块位置</param>
+    /// <returns>是否存在方块</returns>
     public bool HasBlockAt(Vector3 position)
     {
         return blockDictionary_GameObject.ContainsKey(position);
     }
 
+    /// <summary>
+    /// 删除指定位置的方块（如果存在）
+    /// </summary>
+    /// <param name="position">方块位置</param>
     private void DeleteBlock(Vector3 position)
     {
         if (blockDictionary_GameObject.TryGetValue(position, out GameObject blockObject))
@@ -98,6 +126,11 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 创建一个新的方块对象并设置其纹理和材质
+    /// </summary>
+    /// <param name="position">方块位置</param>
+    /// <param name="texture">方块纹理</param>
     private void CreateBlock(Vector3 position, Texture2D texture)
     {
         blockCounter++;
@@ -133,6 +166,11 @@ public class WorldGenerator : MonoBehaviour
         Debug.Log("已创建方块: " + cube.name + ", 纹理大小: " + texture.width + "x" + texture.height + ", 着色器: " + material.shader.name);
     }
 
+    /// <summary>
+    /// 更新指定位置方块的纹理（如果存在）
+    /// </summary>
+    /// <param name="position">方块位置</param>
+    /// <param name="texture">新的纹理</param>
     private void UpdateBlock(Vector3 position, Texture2D texture)
     {
         if (blockDictionary_GameObject.TryGetValue(position, out GameObject targetBlock))
@@ -151,6 +189,10 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 创建一个带有细节的随机纹理（用于生成不同风格的方块）
+    /// </summary>
+    /// <returns>生成的随机纹理</returns>
     public Texture2D CreateRandomTexture()
     {
         try
@@ -197,6 +239,11 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 创建一个带有轻微噪声的纯色纹理
+    /// </summary>
+    /// <param name="color">基础颜色</param>
+    /// <returns>生成的纯色纹理</returns>
     public Texture2D CreateSolidColorTexture(Color color)
     {
         try
@@ -243,6 +290,11 @@ public class WorldGenerator : MonoBehaviour
     /// 输入字符串应为有效的PNG或JPG BASE64编码。缓存确保相同输入返回相同实例。
     /// </summary>
     private static Dictionary<string, Texture2D> base64TextureCache = new Dictionary<string, Texture2D>();
+    /// <summary>
+    /// 将Base64字符串解码为Texture2D，带有缓存机制，避免重复解码
+    /// </summary>
+    /// <param name="base64">Base64编码的图片字符串</param>
+    /// <returns>解码得到的Texture2D</returns>
     public static Texture2D TextureFromBase64(string base64)
     {
         if (string.IsNullOrEmpty(base64)) return null;
