@@ -85,30 +85,22 @@ public class NetworkManager : MonoBehaviour
         httpClient = new HttpClient();
         Debug.Log("网络管理器初始化...");
         _ = GetPubKeyAsync();
-        StartCoroutine(StartUpdateCycle());
+
+        runCycle();
     }
 
-    /// <summary>启动更新周期：先获取一次完整的世界状态，然后开始周期性地获取Tick更新。</summary>
-    private IEnumerator StartUpdateCycle()
+    async void runCycle()
     {
         Debug.Log("启动更新周期，首先获取完整世界状态...");
-        Task worldStateTask = GetWorldStateAsync();
-        yield return new WaitUntil(() => worldStateTask.IsCompleted);
-
-        if (worldStateTask.IsFaulted)
+        await GetWorldStateAsync();
+        Debug.Log("获取完整世界状态成功，开始更新循环...");
+        while (true)
         {
-            Debug.LogError("获取完整世界状态失败");
+            await GetTickUpdateAsync();
+            await Task.Delay((int)(tickUpdateInterval * 1000f));
         }
-
-        Debug.Log("开始周期性获取Tick更新。");
-        InvokeRepeating(nameof(GetTickUpdateAsyncWrapper), 0f, tickUpdateInterval);
     }
 
-    /// <summary>对异步的GetTickUpdateAsync进行包装，以便InvokeRepeating可以调用。</summary>
-    private void GetTickUpdateAsyncWrapper()
-    {
-        _ = GetTickUpdateAsync();
-    }
 
     /// <summary>从服务器异步获取公钥并反序列化为 byte[]。</summary>
     public async Task GetPubKeyAsync()
@@ -164,17 +156,22 @@ public class NetworkManager : MonoBehaviour
     /// <summary>从服务器异步获取Tick更新。</summary>
     private async Task GetTickUpdateAsync()
     {
-        Debug.Log("开始获取Tick更新");
         var url = $"{ServerUrl}/tick_update_vec";
         try
         {
             var jsonString = await httpClient.GetStringAsync(url);
             var wrappedJson = $"{{\"items\":{jsonString}}}";
             var wrapper = JsonUtility.FromJson<TickUpdateWrapper>(wrappedJson);
-
             if (wrapper != null && wrapper.items != null && wrapper.items.Length > 0)
             {
                 Debug.Log($"接收到 {wrapper.items.Length} 个Tick更新。");
+                // 展示一下
+                foreach (var item in wrapper.items)
+                {
+                    Debug.Log(
+                        $"更新: 方块: (x:{item.block.block.point.x}, y:{item.block.block.point.y}, z:{item.block.block.point.z}), 时间戳: {item.timestamp}, 公钥长度: {item.block.pub_key.Length}"
+                    );
+                }
                 // TODO 处理Tick更新
             }
         }
