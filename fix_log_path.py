@@ -6,17 +6,17 @@ import os
 import random
 import time
 import sys
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import requests
 import threading
 
 #############################################
-# 方块世界服务器 - HTTP后端
+# 方块世界服务器 - 主动发送模式
 # 
-# 该脚本创建一个HTTP服务器，为Unity前端提供两个端点：
-# 1. 完整世界状态 (/known_world_state)
-# 2. 最近一个Tick的方块更新列表 (/tick_block_update_list)
+# 该脚本创建一个主动发送数据的服务器，定期向Unity客户端发送：
+# 1. 完整世界状态 (/full_world_state)
+# 2. 世界更新信息 (/world_update)
 #
-# 数据以JSON格式传输，包含方块位置、贴图、公钥和难度信息
+# 数据以JSON格式通过HTTP POST发送到Unity的HTTP服务器
 #############################################
 
 # 配置参数
@@ -26,16 +26,16 @@ BLOCKS_PER_TICK = 100  # 每个Tick更新的方块数量，改为100个方块
 TEXTURE_BYTES = 32     # 贴图数据大小: 256位 = 32字节
 PUBKEY_BYTES = 32      # 公钥数据大小: 256位 = 32字节
 
-# API端点定义
-KNOWN_WORLD_STATE_ENDPOINT = '/known_world_state'           # 获取完整世界状态的端点
-TICK_BLOCK_UPDATE_LIST_ENDPOINT = '/tick_block_update_list' # 获取Tick更新的端点
-HTTP_HOST = 'localhost'  # 服务器主机名
-HTTP_PORT = 8765         # 服务器端口
+# Unity客户端配置
+UNITY_SERVER_URL = "http://localhost:8766"  # Unity HTTP服务器地址
+FULL_WORLD_STATE_ENDPOINT = "/full_world_state"  # 完整世界状态端点
+WORLD_UPDATE_ENDPOINT = "/world_update"     # 世界更新端点
 
 # 全局变量
 server_running = True     # 服务器运行状态标志
 last_world_state = None   # 缓存的世界状态
 tick_count = 0            # Tick计数器，记录服务器运行了多少个更新周期
+unity_connected = False   # Unity客户端连接状态
 
 def random_block():
     """
@@ -86,103 +86,159 @@ def make_state_json(num_blocks):
         "Blocks": [random_block() for _ in range(num_blocks)]
     }, ensure_ascii=False)
 
-class BlockDataHandler(BaseHTTPRequestHandler):
+def check_unity_connection():
     """
-    HTTP请求处理器，处理方块数据的请求
+    检查Unity客户端是否连接
     
-    实现两个主要端点:
-    1. /known_world_state - 返回完整的世界状态
-    2. /tick_block_update_list - 返回最新的Tick更新
+    返回:
+        bool: Unity客户端是否可连接
     """
-    def do_GET(self):
-        """处理GET请求"""
-        global last_world_state, tick_count
-        
-        print(f"[SERVER] Received request: {self.path}")
-        
-        # 设置CORS头信息，允许跨域请求
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-        
-        # 处理获取完整世界状态的请求
-        if self.path == KNOWN_WORLD_STATE_ENDPOINT:
-            # 如果尚未生成世界状态，则创建一个新的
-            if last_world_state is None:
-                last_world_state = make_state_json(BLOCKS_PER_STATE)
-                print(f"[SERVER] Generated new world state with {BLOCKS_PER_STATE} blocks")
-            
-            # 返回完整的世界状态
-            self.wfile.write(last_world_state.encode('utf-8'))
-            print(f"[SERVER] Sent full world state: {last_world_state[:100]}...")
-        
-        # 处理获取Tick更新的请求    
-        elif self.path == TICK_BLOCK_UPDATE_LIST_ENDPOINT:
-            tick_count += 1
-            # 为本次Tick生成新的方块更新
-            tick_update = make_state_json(BLOCKS_PER_TICK)
-            self.wfile.write(tick_update.encode('utf-8'))
-            print(f"[SERVER] Sent tick update #{tick_count}: {tick_update[:100]}...")
-        
-        # 处理未知端点    
-        else:
-            response = json.dumps({
-                "error": "Unknown endpoint",
-                "path": self.path
-            }, ensure_ascii=False)
-            self.wfile.write(response.encode('utf-8'))
-            print(f"[SERVER] Unknown endpoint: {self.path}")
+    # 尝试多个可能的端口
+    for port in range(8766, 8771):
+        try:
+            url = f"http://localhost:{port}/"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 404:  # 404表示服务器运行但端点不存在，这是正常的
+                global UNITY_SERVER_URL
+                UNITY_SERVER_URL = f"http://localhost:{port}"
+                print(f"[SERVER] 检测到Unity服务器运行在端口 {port}")
+                return True
+        except requests.exceptions.RequestException:
+            continue
+    return False
 
-    def log_message(self, format, *args):
-        """
-        覆盖默认的日志方法，避免控制台输出过多信息
-        """
-        # 不输出任何信息
-        return
-
-def run_http_server():
+def send_to_unity(endpoint, data):
     """
-    运行HTTP服务器的主函数
+    向Unity客户端发送数据
     
-    创建并启动HTTP服务器，处理到来的请求直到服务器停止
+    参数:
+        endpoint (str): 端点路径
+        data (str): JSON数据
+        
+    返回:
+        bool: 发送是否成功
     """
     try:
-        # 创建并配置HTTP服务器
-        server_address = (HTTP_HOST, HTTP_PORT)
-        httpd = HTTPServer(server_address, BlockDataHandler)
+        url = f"{UNITY_SERVER_URL}{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, data=data, headers=headers, timeout=5)
         
-        # 输出服务器启动信息
-        print(f"[SERVER] HTTP server started at http://{HTTP_HOST}:{HTTP_PORT}/")
-        print(f"[SERVER] Available endpoints:")
-        print(f"[SERVER] - {KNOWN_WORLD_STATE_ENDPOINT} - Get full world state")
-        print(f"[SERVER] - {TICK_BLOCK_UPDATE_LIST_ENDPOINT} - Get latest tick updates")
-        
-        # 开始服务器主循环
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("[SERVER] HTTP server stopped by user")
-    except Exception as e:
-        print(f"[SERVER] HTTP server error: {e}")
-    finally:
-        # 确保在服务器结束时更新全局状态
-        global server_running
-        server_running = False
+        if response.status_code == 200:
+            print(f"[SERVER] 成功发送数据到 {endpoint}")
+            return True
+        else:
+            print(f"[SERVER] 发送数据到 {endpoint} 失败，状态码: {response.status_code}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        print(f"[SERVER] 发送数据到 {endpoint} 时出错: {e}")
+        return False
+
+def send_full_world_state():
+    """
+    发送完整世界状态到Unity客户端
+    """
+    global last_world_state
+    
+    if not unity_connected:
+        print("[SERVER] Unity客户端未连接，跳过发送完整世界状态")
+        return
+
+    # 生成新的完整世界状态
+    last_world_state = make_state_json(BLOCKS_PER_STATE)
+    
+    # 发送到Unity
+    if send_to_unity(FULL_WORLD_STATE_ENDPOINT, last_world_state):
+        print(f"[SERVER] 已发送完整世界状态，包含 {BLOCKS_PER_STATE} 个方块")
+    else:
+        print("[SERVER] 发送完整世界状态失败")
+
+def send_world_update():
+    """
+    发送世界更新到Unity客户端
+    """
+    global tick_count
+    
+    if not unity_connected:
+        print("[SERVER] Unity客户端未连接，跳过发送世界更新")
+        return
+    
+    tick_count += 1
+    
+    # 生成世界更新数据
+    world_update = make_state_json(BLOCKS_PER_TICK)
+    
+    # 发送到Unity
+    if send_to_unity(WORLD_UPDATE_ENDPOINT, world_update):
+        print(f"[SERVER] 已发送世界更新 #{tick_count}，包含 {BLOCKS_PER_TICK} 个方块")
+    else:
+        print(f"[SERVER] 发送世界更新 #{tick_count} 失败")
+
+def connection_monitor():
+    """
+    监控Unity客户端连接状态的后台线程
+    """
+    global unity_connected
+    
+    while server_running:
+        try:
+            current_connection = check_unity_connection()
+            
+            if current_connection != unity_connected:
+                if current_connection:
+                    print("[SERVER] 检测到Unity客户端连接")
+                    unity_connected = True
+                    # 立即发送完整世界状态
+                    send_full_world_state()
+                else:
+                    print("[SERVER] Unity客户端断开连接")
+                    unity_connected = False
+            
+            time.sleep(2)  # 每2秒检查一次连接状态
+            
+        except Exception as e:
+            print(f"[SERVER] 连接监控出错: {e}")
+            time.sleep(5)
+
+def update_scheduler():
+    """
+    定期发送更新的调度器线程
+    """
+    while server_running:
+        try:
+            if unity_connected:
+                send_world_update()
+            time.sleep(10)  # 每10秒发送一次更新
+            
+        except Exception as e:
+            print(f"[SERVER] 更新调度器出错: {e}")
+            time.sleep(5)
 
 def main():
     """
     程序主函数
     
-    创建并启动HTTP服务器线程，然后保持主线程运行以便用户可以通过Ctrl+C终止程序
+    启动连接监控和更新调度器，然后保持主线程运行
     """
-    # 在单独的线程中启动HTTP服务器，以便主线程可以处理用户输入
-    server_thread = threading.Thread(target=run_http_server)
-    server_thread.daemon = True  # 设置为守护线程，这样主线程退出时，服务器线程也会退出
-    server_thread.start()
+    global unity_connected, server_running
     
-    print("[MAIN] Server running. Press Ctrl+C to exit.")
+    print("[MAIN] 方块世界服务器启动")
+    print(f"[MAIN] Unity服务器地址: {UNITY_SERVER_URL}")
+    print(f"[MAIN] 完整世界状态端点: {FULL_WORLD_STATE_ENDPOINT}")
+    print(f"[MAIN] 世界更新端点: {WORLD_UPDATE_ENDPOINT}")
+    print("[MAIN] 更新间隔: 10秒")
+    
+    # 启动连接监控线程
+    connection_thread = threading.Thread(target=connection_monitor)
+    connection_thread.daemon = True
+    connection_thread.start()
+    
+    # 启动更新调度器线程
+    scheduler_thread = threading.Thread(target=update_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+    
+    print("[MAIN] 服务器运行中。按 Ctrl+C 退出。")
     
     try:
         # 保持主线程运行，每秒检查一次服务器状态
@@ -190,11 +246,13 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         # 处理用户通过Ctrl+C终止程序的情况
-        print("\n[MAIN] Program terminated by user")
+        print("\n[MAIN] 程序被用户终止")
+        server_running = False
         sys.exit(0)
     except Exception as e:
         # 处理其他未捕获的异常
-        print(f"[MAIN] Unhandled exception: {e}")
+        print(f"[MAIN] 未处理的异常: {e}")
+        server_running = False
         sys.exit(1)
 
 # 程序入口点

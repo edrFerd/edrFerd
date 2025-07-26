@@ -250,13 +250,56 @@ public class WorldGenerator : MonoBehaviour
         {
             return cached;
         }
-        byte[] imageData = System.Convert.FromBase64String(base64);
+        
+        try
+        {
+            byte[] imageData = System.Convert.FromBase64String(base64);
+            Texture2D tex = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+            bool loadSuccess = tex.LoadImage(imageData);
+            
+            if (!loadSuccess)
+            {
+                Debug.LogWarning($"无法加载Base64图像数据，使用默认纹理。数据长度: {imageData.Length}");
+                // 创建默认纹理
+                tex = CreateDefaultTexture();
+            }
+            else
+            {
+                tex.filterMode = FilterMode.Point;
+                tex.wrapMode = TextureWrapMode.Repeat;
+                tex.Apply();
+            }
+            
+            base64TextureCache[base64] = tex;
+            return tex;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"Base64图像数据解析失败，使用默认纹理。错误: {e.Message}");
+            // 创建默认纹理
+            Texture2D fallbackTex = CreateDefaultTexture();
+            base64TextureCache[base64] = fallbackTex;
+            return fallbackTex;
+        }
+    }
+    
+    /// <summary>
+    /// 创建默认纹理作为加载失败时的备用方案
+    /// </summary>
+    private static Texture2D CreateDefaultTexture()
+    {
         Texture2D tex = new Texture2D(16, 16, TextureFormat.RGBA32, false);
-        tex.LoadImage(imageData);
+        Color defaultColor = new Color(0.5f, 0.5f, 0.5f, 1.0f); // 灰色
+        for (int x = 0; x < 16; x++)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                tex.SetPixel(x, y, defaultColor);
+            }
+        }
         tex.filterMode = FilterMode.Point;
         tex.wrapMode = TextureWrapMode.Repeat;
         tex.Apply();
-        base64TextureCache[base64] = tex;
         return tex;
     }
 
