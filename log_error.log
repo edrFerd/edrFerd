@@ -1,0 +1,9 @@
+初始化日志系统时发生错误: Sharing violation on path C:\Users\win10\Nextcloud\PC4\Dying_2\Unity\edrFerd\root_log.log
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <4780199c95764436ade50bbd58f63488>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <4780199c95764436ade50bbd58f63488>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <4780199c95764436ade50bbd58f63488>:0 
+  at System.IO.StreamWriter..ctor (System.String path) [0x00008] in <4780199c95764436ade50bbd58f63488>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string)
+  at System.IO.File.WriteAllText (System.String path, System.String contents) [0x00026] in <4780199c95764436ade50bbd58f63488>:0 
+  at CustomLogger.Initialize () [0x00021] in C:\Users\win10\Nextcloud\PC4\Dying_2\Unity\edrFerd\Assets\Scripts\CustomLogger.cs:38 
